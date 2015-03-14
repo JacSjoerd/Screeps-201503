@@ -1,7 +1,7 @@
 module.exports = function(creep){
     // Genearl carrier 
     var target;
-    var energyDrop = creep.pos.findClosest(Game.DROPPED_ENERGY, {maxOps: 20});
+    var energyDrop = creep.pos.findClosest(Game.DROPPED_ENERGY);
     var mySpawn = Game.spawns.Spawn1;
     var extension = creep.pos.findClosest(Game.STRUCTURES, {
         filter: function(object) {
@@ -15,16 +15,28 @@ module.exports = function(creep){
         target = mySpawn;
     }
 
+    
     if (creep.memory.role == 'carrier') {
-        if (creep.energy < creep.energyCapacity) {
-            creep.moveTo(Game.creeps[creep.memory.target]);
-            if (creep.pos.isNearTo(energyDrop)) {
-                creep.pickup(energyDrop);
+        if (Game.creeps[creep.memory.target] === undefined) {
+            creep.suicide();
+        }
+        
+       if (creep.energy < creep.energyCapacity) {
+            if (Game.creeps[creep.memory.target] === undefined) {
+                creep.suicide();
+            } else {
+                creep.moveTo(Game.creeps[creep.memory.target]);
+                if (creep.pos.isNearTo(energyDrop)) {
+                    creep.pickup(energyDrop);
+                }
             }
         } else {
             creep.moveTo(target);
             creep.transferEnergy(target);
         }
+
+        
+        
     } else if (creep.memory.role == 'supplier'){
          if (creep.energy === 0) {
             creep.moveTo(mySpawn);
@@ -34,6 +46,11 @@ module.exports = function(creep){
         } else {
             creep.moveTo(Game.creeps[creep.memory.target]);
             creep.transferEnergy(Game.creeps[creep.memory.target]);
+        }
+        if (creep.ticksToLive == 75) {
+            Memory.sourceLocation.push(creep.memory.target);
+            Memory.buildOrder.push("supplier");
+            console.log("Rebuilding supplier " + creep.name);
         }
     } else { // Energy scoop   
         if(energyDrop) {
@@ -47,6 +64,11 @@ module.exports = function(creep){
         } else {
             creep.moveTo(mySpawn);
             creep.transferEnergy(mySpawn);
+        }
+        if (creep.ticksToLive == 75) {
+            Memory.sourceLocation.push(creep.memory.target);
+            Memory.buildOrder.push("snooper");
+            console.log("Rebuilding snooper " + creep.name);
         }
     }
 }
