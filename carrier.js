@@ -25,9 +25,20 @@ module.exports = function(creep){
             if (Game.creeps[creep.memory.target] === undefined) {
                 creep.suicide();
             } else {
-                creep.moveTo(Game.creeps[creep.memory.target]);
-                if (creep.pos.isNearTo(energyDrop)) {
-                    creep.pickup(energyDrop);
+                var keeper = creep.pos.findInRange(Game.HOSTILE_CREEPS, 8, {
+                    filter: function(object) {
+                        return object.owner.username == "Source Keeper";
+                    }
+                });
+                if (keeper.length || target.ticksToRegeneration < 50 ) {
+                    if (!creep.pos.isNearTo(45,21)){
+                        creep.moveTo(45, 21);
+                    }
+                } else {
+                    creep.moveTo(Game.creeps[creep.memory.target]);
+                    if (creep.pos.isNearTo(energyDrop)) {
+                        creep.pickup(energyDrop);
+                    }
                 }
             }
         } else {

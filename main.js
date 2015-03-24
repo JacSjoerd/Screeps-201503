@@ -16,7 +16,8 @@ var guards = 0;
 var keepers = 0;
 var builders = 0;
 var snoopers = 0;
-
+var snipers = 0;
+var healers = 0;
 var myRoom = Game.spawns.Spawn1.room;
 var sources = myRoom.find(Game.SOURCES_ACTIVE);
 var targets = myRoom.find(Game.HOSTILE_CREEPS);
@@ -49,6 +50,9 @@ for(var creepName in Game.creeps) {
             keepWith(creep);
             break;
         case "sniper":
+            snipeWith(creep);
+            snipers++;
+            break;
         case "snipersupport":
             snipeWith(creep);
             break;
@@ -71,6 +75,7 @@ for(var creepName in Game.creeps) {
             break;
         case "healer":
             healWith(creep);
+            healers++;
             break;
         case "squadguard":
         case "squadhealer":
@@ -79,9 +84,15 @@ for(var creepName in Game.creeps) {
     }
 }
 
-    
+Memory.snipers = snipers;
+if (healers <= 1 && (Memory.buildOrder.indexOf('healer') == -1)) {
+    Memory.buildOrder.push('healer');
+}
+if (snoopers <= 1 && (Memory.buildOrder.indexOf('snooper') == -1)) {
+    Memory.buildOrder.push('snooper');
+}
 if (Memory.buildOrder.length === 0) {
-    Memory.buildOrder = ['sniper', 'snipersupport'];
+    Memory.buildOrder = ['sniper'];
 }
 
 var nextBuild = Memory.buildOrder[0];
@@ -95,6 +106,9 @@ if (!mySpawn.spawning && mySpawn.energy > nextBuildingEnergy) {
 
     switch (build) {
         case 'pipehead':
+            if (Memory.pipeCounter < 0){
+                Memory.pipeCounter = Memory.pipeToSource.length - 1;
+            }
             var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'pipehead', pipeLocation: Memory.pipeCounter, target: {x: Memory.pipeToSource[Memory.pipeCounter].x, y: Memory.pipeToSource[Memory.pipeCounter].y}});
             Memory.pipeToSource[Memory.pipeCounter].name = creepName;
             Memory.pipeCounter--;
@@ -108,10 +122,11 @@ if (!mySpawn.spawning && mySpawn.energy > nextBuildingEnergy) {
             var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'guard'});
             break;
         case 'squadguard':
-            var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'squadguard', target: {x:45, y:26}});
+            var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'squadguard', defenseLineCounter: 0, target: {x: 46, y: 26}});
             break;
         case 'sniper':
-            var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'sniper', target: {x: 40, y: 16}});
+            var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'sniper', defenseLineCounter: 0, target: Memory.defenseLine[0]});
+//            var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'sniper', target: {x: 40, y: 16}});
             Memory.lastSniper = creepName;
             break;
         case 'harvester':
@@ -132,6 +147,7 @@ if (!mySpawn.spawning && mySpawn.energy > nextBuildingEnergy) {
             break;
         case 'builder':
             var creepName = mySpawn.createCreep(nextBuildingPlan.slice(1, nextBuildingPlan.length), null, {role: 'builder'});
+            Memory.buildOrder.unshift('supplier');
             Memory.lastBuilder = creepName;
             break;
         case 'fixer':
@@ -156,7 +172,7 @@ if (!mySpawn.spawning && mySpawn.energy > nextBuildingEnergy) {
    
 
 // Check for additional extension to upgrade build plans
-if ((Game.time % 50) === 0) {
+if ((Game.time % 100) === 0) {
     var myExtensions = Game.spawns.Spawn1.room.find(Game.MY_STRUCTURES, {
         filter: function(object) {
             return object.structureType == 'extension';
@@ -166,6 +182,7 @@ if ((Game.time % 50) === 0) {
     console.log('Found ' + myExtensions.length + ' extensions');
     if (myExtensions.length > Memory.countedExtension){
         var requiredEnergy;
+        var extensionPart;
         
         for (var i in  Memory.buildingPlan) {
             
@@ -174,8 +191,10 @@ if ((Game.time % 50) === 0) {
                 case "sniper":
                 case "snipersupport":
                     requiredEnergy = Memory.buildingPlan[i].shift();
-                    Memory.buildingPlan.guard.unshift(Memory.buildingPlan[i][0]);
-                    requiredEnergy = requiredEnergy + Memory.buildcost[Memory.buildingPlan[i][0]];
+                    extensionPart = Memory.buildingPlan[i].pop();
+                    Memory.buildingPlan[i].push(extensionPart);
+                    Memory.buildingPlan[i].push(extensionPart);
+                    requiredEnergy = requiredEnergy + Memory.buildcost[extensionPart];
                     Memory.buildingPlan[i].unshift(requiredEnergy);
                     break;
             } 
@@ -191,9 +210,5 @@ if ((snoopers < 1) && (Memory.buildOrder.indexOf("snooper") < 0) && !mySpawn.spa
     Memory.buildOrder.push('snooper');
 }
 
-// check for harvesters source 1
-if ((harvesters < 3) && (Memory.buildOrder.indexOf("harvester") < 0) && !mySpawn.spawning) {
-    Memory.buildOrder.push("harvester");
-}
 
  

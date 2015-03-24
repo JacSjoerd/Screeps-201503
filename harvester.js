@@ -3,18 +3,21 @@ module.exports = function(creep) {
 	var targetY = creep.memory.target.y;
 
 	// Move creep to location unless there is a Keeper
-	var keeper = creep.pos.findInRange(Game.HOSTILE_CREEPS, 6, {
+	var keeper = creep.pos.findInRange(Game.HOSTILE_CREEPS, 8, {
 	    filter: function(object) {
 	        return object.owner.username == "Source Keeper";
 	    }
-	})
+	});
 	
-	if (keeper.length || (Game.time > 1000 && Game.time <1200) ) {
-	    creep.moveTo(43, 22);
+    var target = creep.pos.findClosest(Game.SOURCES, {maxOps: 20, ignoreCreeps: true});
+
+	if (keeper.length || target.ticksToRegeneration < 50 ) {
+	    if (!creep.pos.isNearTo(45,21)){
+    	    creep.moveTo(45, 21);
+	    }
 	} else if (!creep.pos.isEqualTo(targetX, targetY)) {
 		creep.moveTo(targetX, targetY);
 	} else {
-	    var target = creep.pos.findClosest(Game.SOURCES, {maxOps: 5, ignoreCreeps: true});
 	    creep.harvest(target);
 	}
 	
